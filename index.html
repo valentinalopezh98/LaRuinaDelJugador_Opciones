@@ -9,6 +9,10 @@
         font-family: Arial, sans-serif;
         padding: 20px;
         background: #f4f4f4;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
       }
       label,
       input {
@@ -66,18 +70,18 @@
         while (saldo >= apuestaActual && saldo < objetivo) {
           const resultado = Math.floor(Math.random() * maxNumero) + 1;
           const gana = resultado >= 1 && resultado <= 18;
-          if (gana) {
+          if (gana) { 
             saldo += apuestaActual;
-            if (estrategia === "martingala") {
+            if (estrategia === "martingala") { //Si gana con Martingala, mantiene la apuesta
               apuestaActual = apuestaBase;
-            } else if (estrategia === "paroli") {
+            } else if (estrategia === "paroli") { //Si gana con  Paroli, duplica la apuesta
               apuestaActual = Math.min(apuestaActual * 2, saldo);
             }
           } else {
             saldo -= apuestaActual;
-            if (estrategia === "martingala") {
+            if (estrategia === "martingala") { //Si pierde con Martingala, duplica la apuesta
               apuestaActual = Math.min(apuestaActual * 2, saldo);
-            } else if (estrategia === "paroli") {
+            } else if (estrategia === "paroli") { //Si pierde con Paroli, mantiene la apuesta
               apuestaActual = apuestaBase;
             }
           }
