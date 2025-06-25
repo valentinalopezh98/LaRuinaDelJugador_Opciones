@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Simulador de Estrategias - Ruina del Jugador</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background: #f4f4f4;
+      }
+      label,
+      input {
+        display: block;
+        margin: 10px 0;
+      }
+      button {
+        margin: 10px 10px 0 0;
+      }
+      canvas {
+        max-width: 600px;
+        margin-top: 30px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Comparador de Estrategias - Ruina del Jugador</h1>
+    <label for="noches">Cantidad de noches a simular:</label>
+    <input type="number" id="noches" value="1000" min="1" />
+
+    <label for="apuesta">Monto base de la apuesta ($):</label>
+    <input type="number" id="apuesta" value="5" min="1" />
+
+    <label for="saldoInicial">Saldo inicial ($):</label>
+    <input type="number" id="saldoInicial" value="50" min="1" />
+
+    <label for="objetivo">Objetivo a alcanzar ($):</label>
+    <input type="number" id="objetivo" value="600" min="1" />
+
+    <input type="checkbox" id="conCero" />
+    <label for="conCero">Incluir 0 en la ruleta</label>
+    <button onclick="compararEstrategias()">Comparar Estrategias</button>
+
+    <div id="resultados"></div>
+    <canvas id="graficoEvoluciones"></canvas>
+    <canvas
+      id="graficoPorcentajes"
+      style="max-width: 600px; margin-top: 40px"
+    ></canvas>
+
+    <script>
+      // Simula una noche completa aplicando una estrategia
+      function simularNocheEstrategiaConHistorial(
+        estrategia,
+        apuestaBase,
+        saldoInicial,
+        objetivo,
+        conCero = false
+      ) {
+        let saldo = saldoInicial;
+        const maxNumero = conCero ? 37 : 36;
+        let apuestaActual = apuestaBase;
+        let historial = [saldo];
+        let apuestas = 0;
+        while (saldo >= apuestaActual && saldo < objetivo) {
+          const resultado = Math.floor(Math.random() * maxNumero) + 1;
+          const gana = resultado >= 1 && resultado <= 18;
+          if (gana) {
+            saldo += apuestaActual;
+            if (estrategia === "martingala") {
+              apuestaActual = apuestaBase;
+            } else if (estrategia === "paroli") {
+              apuestaActual = Math.min(apuestaActual * 2, saldo);
+            }
+          } else {
+            saldo -= apuestaActual;
+            if (estrategia === "martingala") {
+              apuestaActual = Math.min(apuestaActual * 2, saldo);
+            } else if (estrategia === "paroli") {
+              apuestaActual = apuestaBase;
+            }
+          }
+          historial.push(saldo);
+          apuestas++;
+        }
+        return { exito: saldo >= objetivo, historial, apuestas };
+      } 
+      
+      
+      // Simula múltiples noches con una estrategia
+      function simularEstrategia(
+        estrategia,
+        noches,
+        apuestaBase,
+        saldoInicial,
+        objetivo,
+        conCero = false
+      ) {
+        let exitos = 0;
+        let totalApuestas = 0;
+        let historialEjemplo = [];
+        for (let i = 0; i < noches; i++) {
+          const resultado = simularNocheEstrategiaConHistorial(
+            estrategia,
+            apuestaBase,
+            saldoInicial,
+            objetivo,
+            conCero
+          );
+          if (resultado.exito) exitos++;
+          totalApuestas += resultado.apuestas;
+          if (i === 0) historialEjemplo = resultado.historial;
+        }
+        return {
+          estrategia,
+          exitos,
+          fracasos: noches - exitos,
+          porcentaje: ((exitos / noches) * 100).toFixed(2),
+          promedioApuestas: (totalApuestas / noches).toFixed(2),
+          historial: historialEjemplo,
+        };
+      } 
+      
+      // Compara las estrategias y muestra resultados
+      function compararEstrategias() {
+        const noches = parseInt(document.getElementById("noches").value);
+        const apuesta = parseInt(document.getElementById("apuesta").value);
+        const saldoInicial = parseInt(
+          document.getElementById("saldoInicial").value
+        );
+        const objetivo = parseInt(document.getElementById("objetivo").value);
+        const conCero = document.getElementById("conCero").checked;
+        const estrategias = ["fija", "martingala", "paroli"];
+        const resultados = estrategias.map((e) =>
+          simularEstrategia(e, noches, apuesta, saldoInicial, objetivo, conCero)
+        );
+        let html = "<h3>Comparación de Estrategias</h3>";
+        resultados.forEach((r) => {
+          html += ` <p><strong>${r.estrategia.toUpperCase()}</strong><br> Éxitos: ${
+            r.exitos
+          } - Fracasos: ${r.fracasos} <br> % Éxito: ${
+            r.porcentaje
+          }%<br> Promedio de apuestas: ${r.promedioApuestas}</p> `;
+        });
+        document.getElementById("resultados").innerHTML = html;
+        dibujarGraficoEvoluciones(resultados);
+        dibujarGraficoPorcentajes(resultados);
+      } 
+      
+      // Dibuja gráfico comparando evolución del saldo para las estrategias
+      
+      let graficoEstrategias;
+      function dibujarGraficoEvoluciones(resultados) {
+        const ctx = document
+          .getElementById("graficoEvoluciones")
+          .getContext("2d");
+        if (graficoEstrategias) graficoEstrategias.destroy();
+        graficoEstrategias = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: resultados[0].historial.map((_, i) => i),
+            datasets: resultados.map((r) => ({
+              label: `Saldo (${r.estrategia})`,
+              data: r.historial,
+              borderColor:
+                r.estrategia === "fija"
+                  ? "#2196f3"
+                  : r.estrategia === "martingala"
+                  ? "#4caf50"
+                  : "#f44336",
+              fill: false,
+              tension: 0.1,
+            })),
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              title: {
+                display: true,
+                text: "Evolución del saldo (1ra noche por estrategia)",
+              },
+            },
+            scales: {
+              y: { title: { display: true, text: "Saldo ($)" } },
+              x: { title: { display: true, text: "Apuesta n°" } },
+            },
+          },
+        });
+      }
+
+      let graficoPorcentajes;
+      function dibujarGraficoPorcentajes(resultados) {
+  const ctx = document.getElementById("graficoPorcentajes").getContext("2d");
+  if (graficoPorcentajes) graficoPorcentajes.destroy();
+
+  // Obtengo los porcentajes de éxito como números
+  const porcentajes = resultados.map(r => parseFloat(r.porcentaje));
+
+  // Calculo el máximo para el eje y, agregando un margen de 5, y al menos 20
+  const maxY = Math.max(Math.ceil(Math.max(...porcentajes) + 5), 20);
+
+  graficoPorcentajes = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: ["Fija", "Martingala", "Paroli"],
+      datasets: [
+        {
+          label: "Porcentaje de Éxito",
+          data: porcentajes,
+          backgroundColor: ["#42a5f5", "#ef5350", "#66bb6a"],
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: maxY,  // Aquí el límite dinámico
+          title: {
+            display: true,
+            text: "% de Éxito",
+          },
+        },
+      },
+      plugins: {
+        title: {
+          display: true,
+          text: "Comparación de Éxito por Estrategia",
+        },
+      },
+    },
+  });
+}
+    </script>
+  </body>
+</html>
