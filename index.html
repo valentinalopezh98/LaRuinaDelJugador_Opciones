@@ -8,20 +8,49 @@
       body {
         font-family: Arial, sans-serif;
         padding: 20px;
-        background: #f4f4f4;
+        background: radial-gradient(circle at center, #111 0%, #000 100%);
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
+        color: #f0f0f0;
       }
+
       label,
       input {
         display: block;
         margin: 10px 0;
       }
-      button {
-        margin: 10px 10px 0 0;
+
+      input {
+        background-color: #222;
+        color: #f0f0f0;
+        border: 1px solid #888;
+        padding: 8px;
+        width: 250px;
+        border-radius: 5px;
+        margin-top: 5px;
       }
+
+      h1 {
+        color: #10e0f3;
+        text-shadow: 0 0 10px #00c1d1;
+        font-size: 2em;
+      }
+
+      button {
+        margin: 15px 10px 0 0;
+        padding: 10px 20px;
+        font-weight: bold;
+        background: linear-gradient(145deg, #00c1d1, #10e0f3);
+        color: #000;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        box-shadow: 0 0 8px #10e0f3;
+        transition: transform 0.2s, box-shadow 0.3s;
+      }
+
       canvas {
         max-width: 600px;
         margin-top: 30px;
@@ -70,18 +99,22 @@
         while (saldo >= apuestaActual && saldo < objetivo) {
           const resultado = Math.floor(Math.random() * maxNumero) + 1;
           const gana = resultado >= 1 && resultado <= 18;
-          if (gana) { 
+          if (gana) {
             saldo += apuestaActual;
-            if (estrategia === "martingala") { //Si gana con Martingala, mantiene la apuesta
+            if (estrategia === "martingala") {
+              //Si gana con Martingala, mantiene la apuesta
               apuestaActual = apuestaBase;
-            } else if (estrategia === "paroli") { //Si gana con  Paroli, duplica la apuesta
+            } else if (estrategia === "paroli") {
+              //Si gana con  Paroli, duplica la apuesta
               apuestaActual = Math.min(apuestaActual * 2, saldo);
             }
           } else {
             saldo -= apuestaActual;
-            if (estrategia === "martingala") { //Si pierde con Martingala, duplica la apuesta
+            if (estrategia === "martingala") {
+              //Si pierde con Martingala, duplica la apuesta
               apuestaActual = Math.min(apuestaActual * 2, saldo);
-            } else if (estrategia === "paroli") { //Si pierde con Paroli, mantiene la apuesta
+            } else if (estrategia === "paroli") {
+              //Si pierde con Paroli, mantiene la apuesta
               apuestaActual = apuestaBase;
             }
           }
@@ -89,9 +122,8 @@
           apuestas++;
         }
         return { exito: saldo >= objetivo, historial, apuestas };
-      } 
-      
-      
+      }
+
       // Simula múltiples noches con una estrategia
       function simularEstrategia(
         estrategia,
@@ -124,8 +156,8 @@
           promedioApuestas: (totalApuestas / noches).toFixed(2),
           historial: historialEjemplo,
         };
-      } 
-      
+      }
+
       // Compara las estrategias y muestra resultados
       function compararEstrategias() {
         const noches = parseInt(document.getElementById("noches").value);
@@ -150,10 +182,10 @@
         document.getElementById("resultados").innerHTML = html;
         dibujarGraficoEvoluciones(resultados);
         dibujarGraficoPorcentajes(resultados);
-      } 
-      
+      }
+
       // Dibuja gráfico comparando evolución del saldo para las estrategias
-      
+
       let graficoEstrategias;
       function dibujarGraficoEvoluciones(resultados) {
         const ctx = document
@@ -171,8 +203,8 @@
                 r.estrategia === "fija"
                   ? "#2196f3"
                   : r.estrategia === "martingala"
-                  ? "#4caf50"
-                  : "#f44336",
+                  ? "#ef5350"
+                  : "#66bb6a",
               fill: false,
               tension: 0.1,
             })),
@@ -186,8 +218,14 @@
               },
             },
             scales: {
-              y: { title: { display: true, text: "Saldo ($)" } },
-              x: { title: { display: true, text: "Apuesta n°" } },
+              y: {
+                title: { display: true, text: "Saldo ($)" },
+                grid: { color: "#9b9b9b" },
+              },
+              x: {
+                title: { display: true, text: "Apuesta n°" },
+                grid: { color: "#9b9b9b" }
+              },
             },
           },
         });
@@ -195,48 +233,52 @@
 
       let graficoPorcentajes;
       function dibujarGraficoPorcentajes(resultados) {
-  const ctx = document.getElementById("graficoPorcentajes").getContext("2d");
-  if (graficoPorcentajes) graficoPorcentajes.destroy();
+        const ctx = document
+          .getElementById("graficoPorcentajes")
+          .getContext("2d");
+        if (graficoPorcentajes) graficoPorcentajes.destroy();
 
-  // Obtengo los porcentajes de éxito como números
-  const porcentajes = resultados.map(r => parseFloat(r.porcentaje));
+        // Obtengo los porcentajes de éxito como números
+        const porcentajes = resultados.map((r) => parseFloat(r.porcentaje));
 
-  // Calculo el máximo para el eje y, agregando un margen de 5, y al menos 20
-  const maxY = Math.max(Math.ceil(Math.max(...porcentajes) + 5), 20);
+        // Calculo el máximo para el eje y, agregando un margen de 5, y al menos 20
+        const maxY = Math.max(Math.ceil(Math.max(...porcentajes) + 5), 20);
 
-  graficoPorcentajes = new Chart(ctx, {
-    type: "bar",
-    data: {
-      labels: ["Fija", "Martingala", "Paroli"],
-      datasets: [
-        {
-          label: "Porcentaje de Éxito",
-          data: porcentajes,
-          backgroundColor: ["#42a5f5", "#ef5350", "#66bb6a"],
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      scales: {
-        y: {
-          beginAtZero: true,
-          max: maxY,  // Aquí el límite dinámico
-          title: {
-            display: true,
-            text: "% de Éxito",
+        graficoPorcentajes = new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: ["Fija", "Martingala", "Paroli"],
+            datasets: [
+              {
+                label: "Porcentaje de Éxito",
+                data: porcentajes,
+                backgroundColor: ["#42a5f5", "#ef5350", "#66bb6a"],
+              },
+            ],
           },
-        },
-      },
-      plugins: {
-        title: {
-          display: true,
-          text: "Comparación de Éxito por Estrategia",
-        },
-      },
-    },
-  });
-}
+          options: {
+            responsive: true,
+            scales: {
+              y: {
+                beginAtZero: true,
+                max: maxY, // Aquí el límite dinámico
+                title: {
+                  display: true,
+                  text: "% de Éxito",
+                },
+                grid: { color: "#9b9b9b" }
+              },
+            },
+            plugins: {
+              title: {
+                display: true,
+                text: "Comparación de Éxito por Estrategia",
+              },
+              grid: { color: "#9b9b9b" }
+            },
+          },
+        });
+      }
     </script>
   </body>
 </html>
